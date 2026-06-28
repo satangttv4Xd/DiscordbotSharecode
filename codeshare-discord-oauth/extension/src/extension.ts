@@ -36,7 +36,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- Tree views ---
   const accountProvider = new AccountProvider(auth);
-  const quickShareProvider = new QuickShareProvider();
+  const quickShareProvider = new QuickShareProvider(auth);
   const connectionProvider = new ConnectionProvider(auth, backend);
   const historyProvider = new HistoryProvider(history);
   const settingsProvider = new SettingsProvider();
@@ -107,9 +107,27 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     dispose: () => undefined,
   });
 
+  // --- Sync context key so viewsWelcome conditions work ---
+  const syncAuthContext = (profile: import('./types').UserProfile | undefined): void => {
+    void vscode.commands.executeCommand(
+      'setContext',
+      'codeshare.isAuthenticated',
+      profile !== undefined,
+    );
+  };
+  auth.onDidChangeAuth(syncAuthContext);
+
   // --- Restore prior session, then first-run wizard ---
   await auth.restoreSession();
+  syncAuthContext(auth.getProfile());
   await wizard.maybeShowOnFirstRun();
+
+  // --- Auto-open login only if truly not authenticated after restore ---
+  if (!auth.isAuthenticated()) {
+    // Fire-and-forget so activate() resolves immediately and the progress
+    // notification is owned entirely by login() itself (it will close on its own).
+    void auth.login();
+  }
 
   logger.info('CodeShare Discord activated');
 }

@@ -16,6 +16,7 @@ import { AuthUriHandler } from './uriHandler';
  */
 export class AuthService {
   private profile: UserProfile | undefined;
+  private loginInProgress = false;
   private readonly emitter = new vscode.EventEmitter<UserProfile | undefined>();
 
   /** Fires with the new profile on login, or undefined on logout/expiry. */
@@ -61,6 +62,10 @@ export class AuthService {
 
   /** Run the full interactive login flow. Returns true on success. */
   async login(): Promise<boolean> {
+    if (this.loginInProgress) {
+      this.logger.warn('Login already in progress, ignoring duplicate call.');
+      return false;
+    }
     if (!isBackendUrlValid()) {
       const choice = await vscode.window.showErrorMessage(
         'The CodeShare backend URL is not configured correctly.',
@@ -72,6 +77,7 @@ export class AuthService {
       return false;
     }
 
+    this.loginInProgress = true;
     return vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -80,13 +86,17 @@ export class AuthService {
       },
       async (_progress, cancelToken) => {
         try {
-          // Build the deep link VS Code will receive after authorisation.
-          const callback = await vscode.env.asExternalUri(
+          // Build the redirect URI that the backend will bounce the browser to.
+          // We call asExternalUri so VS Code/Kiro can rewrite the scheme/host for
+          // remote environments. We strip any query params it appends (e.g. windowId)
+          // because they get encoded into the redirect_uri and break path matching
+          // inside uriHandler (/auth%3FwindowId=1 !== /auth).
+          const raw = await vscode.env.asExternalUri(
             vscode.Uri.parse(`${vscode.env.uriScheme}://${this.extensionId}/auth`),
           );
-          const startUrl = `${getBackendUrl()}/oauth/start?redirect_uri=${encodeURIComponent(
-            callback.toString(true),
-          )}`;
+          // Rebuild with only scheme + authority + path — no query string.
+          const callbackClean = `${raw.scheme}://${raw.authority}${raw.path}`;
+          const startUrl = `${getBackendUrl()}/oauth/start?redirect_uri=${encodeURIComponent(callbackClean)}`;
 
           // Begin waiting BEFORE opening the browser to avoid a race.
           const tokenPromise = this.uriHandler.waitForToken();
@@ -106,7 +116,9 @@ export class AuthService {
           this.logger.info(`Logged in as ${this.profile.username}`);
           this.emitter.fire(this.profile);
 
-          await vscode.window.showInformationMessage(
+          // Show the success message AFTER withProgress resolves (fire-and-forget)
+          // so the progress notification dismisses immediately on success.
+          void vscode.window.showInformationMessage(
             `Signed in to Discord as ${this.profile.displayName}.`,
           );
           return true;
@@ -114,6 +126,8 @@ export class AuthService {
           this.logger.error('Login failed', err);
           await vscode.window.showErrorMessage(`Discord login failed: ${(err as Error).message}`);
           return false;
+        } finally {
+          this.loginInProgress = false;
         }
       },
     );
