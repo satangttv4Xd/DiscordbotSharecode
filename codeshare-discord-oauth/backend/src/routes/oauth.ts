@@ -61,6 +61,10 @@ oauthRouter.get('/callback', async (req: Request, res: Response) => {
 
     const deepLink = buildDeepLink(returnUri, sessionToken);
     logger.info('OAuth callback success', { userId: profile.id });
+
+    // Send an HTML page that immediately redirects to the vscode:// deep link.
+    // Using a meta-refresh + JS onclick gives the browser a "user gesture" context
+    // so Chrome's protocol-launch dialog appears automatically without extra clicks.
     res.status(200).type('html').send(successPage(deepLink));
   } catch (err) {
     logger.error('OAuth callback failed', { error: (err as Error).message });
@@ -72,19 +76,27 @@ oauthRouter.get('/callback', async (req: Request, res: Response) => {
 });
 
 function buildDeepLink(returnUri: string, token: string): string {
-  // returnUri is a vscode:// URI. Append the token as a query param.
-  const separator = returnUri.includes('?') ? '&' : '?';
-  return `${returnUri}${separator}token=${encodeURIComponent(token)}`;
+  // returnUri may arrive with %3F instead of a literal '?' (double-encoded by the extension).
+  // Decode once so we can correctly detect existing query params and produce a valid URI.
+  const decoded = decodeURIComponent(returnUri);
+  const separator = decoded.includes('?') ? '&' : '?';
+  return `${decoded}${separator}token=${encodeURIComponent(token)}`;
 }
 
-/** Only permit bouncing back to vscode:/vscode-insiders: deep links. */
+/** Only permit bouncing back to vscode:/ vscode-insiders:/ or kiro: deep links. */
 function isAllowedReturnUri(value: string): boolean {
   if (!value) {
     return false;
   }
   try {
-    const url = new URL(value);
-    return url.protocol === 'vscode:' || url.protocol === 'vscode-insiders:';
+    // value may be percent-encoded — decode before parsing so URL() can read the protocol
+    const decoded = decodeURIComponent(value);
+    const url = new URL(decoded);
+    return (
+      url.protocol === 'vscode:' ||
+      url.protocol === 'vscode-insiders:' ||
+      url.protocol === 'kiro:'
+    );
   } catch {
     return false;
   }

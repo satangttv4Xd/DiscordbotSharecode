@@ -78,7 +78,7 @@ export class ShareController {
           user: result.sharedBy.displayName,
         });
         if (withOwnProgress) {
-          await notifyShareSuccess(result);
+          void notifyShareSuccess(result);
         }
       } catch (err) {
         await this.history.add({
@@ -89,7 +89,7 @@ export class ShareController {
           durationMs: Date.now() - started,
           error: (err as Error).message,
         });
-        await this.handleError(err);
+        void this.handleError(err);
       }
     };
 
@@ -115,7 +115,7 @@ export class ShareController {
         'Login with Discord',
       );
       if (choice === 'Login with Discord') {
-        await this.auth.login();
+        void this.auth.login();
       }
       return;
     }

@@ -3,7 +3,7 @@
   "displayName": "CodeShare Discord",
   "description": "Share source code from VS Code to Discord, signed in with your Discord account so every share shows exactly who sent it.",
   "version": "1.0.0",
-  "publisher": "your-publisher-name",
+  "publisher": "localdev",
   "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
@@ -124,6 +124,18 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "codeshareAccount",
+        "contents": "You are not signed in to Discord.\n[$(sign-in) Login with Discord](command:codeshare.login)\n\nSign in to start sharing code to your Discord server.",
+        "when": "!codeshare.isAuthenticated"
+      },
+      {
+        "view": "codeshareQuickShare",
+        "contents": "Sign in with Discord first to share code.\n[$(sign-in) Login with Discord](command:codeshare.login)",
+        "when": "!codeshare.isAuthenticated"
+      }
+    ],
     "menus": {
       "editor/context": [
         {

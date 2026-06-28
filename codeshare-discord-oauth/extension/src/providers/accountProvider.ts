@@ -21,14 +21,8 @@ export class AccountProvider implements vscode.TreeDataProvider<vscode.TreeItem>
   getChildren(): vscode.TreeItem[] {
     const profile = this.auth.getProfile();
     if (!profile) {
-      const login = new vscode.TreeItem('Login with Discord', vscode.TreeItemCollapsibleState.None);
-      login.iconPath = new vscode.ThemeIcon('sign-in');
-      login.command = { command: 'codeshare.login', title: 'Login with Discord' };
-      login.tooltip = 'Authenticate with your Discord account';
-
-      const hint = new vscode.TreeItem('Not signed in', vscode.TreeItemCollapsibleState.None);
-      hint.iconPath = new vscode.ThemeIcon('account');
-      return [login, hint];
+      // Return empty so VS Code renders the viewsWelcome button from package.json
+      return [];
     }
 
     const items: vscode.TreeItem[] = [];

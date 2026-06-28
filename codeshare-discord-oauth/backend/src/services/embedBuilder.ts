@@ -72,7 +72,6 @@ export function buildShareEmbed(profile: UserProfile, share: ShareRequest): Disc
   if (share.relativePath) {
     fields.push({ name: '📂 Relative Path', value: clamp(share.relativePath), inline: false });
   }
-  fields.push({ name: '🖥 OS', value: clamp(share.operatingSystem), inline: true });
   fields.push({ name: '📝 VS Code', value: clamp(share.vscodeVersion), inline: true });
 
   const embed: DiscordEmbed = {

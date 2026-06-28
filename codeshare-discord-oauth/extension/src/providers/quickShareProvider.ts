@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { AuthService } from '../auth/authService';
 
 interface Action {
   label: string;
@@ -28,13 +29,24 @@ const ACTIONS: Action[] = [
   },
 ];
 
-/** Static list of one-click share actions. */
+/** Static list of one-click share actions — hidden until signed in. */
 export class QuickShareProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+  private readonly emitter = new vscode.EventEmitter<void>();
+  readonly onDidChangeTreeData = this.emitter.event;
+
+  constructor(private readonly auth: AuthService) {
+    this.auth.onDidChangeAuth(() => this.emitter.fire());
+  }
+
   getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
     return element;
   }
 
   getChildren(): vscode.TreeItem[] {
+    // Return empty when not signed in so viewsWelcome Login button is shown instead
+    if (!this.auth.isAuthenticated()) {
+      return [];
+    }
     return ACTIONS.map((action) => {
       const item = new vscode.TreeItem(action.label, vscode.TreeItemCollapsibleState.None);
       item.iconPath = new vscode.ThemeIcon(action.icon);
