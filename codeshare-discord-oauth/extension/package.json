@@ -1,0 +1,241 @@
+{
+  "name": "codeshare-discord",
+  "displayName": "CodeShare Discord",
+  "description": "Share source code from VS Code to Discord, signed in with your Discord account so every share shows exactly who sent it.",
+  "version": "1.0.0",
+  "publisher": "your-publisher-name",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "keywords": ["discord", "share", "code", "oauth", "webhook"],
+  "icon": "resources/icon.png",
+  "activationEvents": ["onUri", "onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codeshare.login",
+        "title": "Login with Discord",
+        "category": "CodeShare"
+      },
+      {
+        "command": "codeshare.logout",
+        "title": "Logout",
+        "category": "CodeShare"
+      },
+      {
+        "command": "codeshare.reconnect",
+        "title": "Reconnect Discord",
+        "category": "CodeShare"
+      },
+      {
+        "command": "codeshare.shareSelection",
+        "title": "Share Selection",
+        "category": "CodeShare",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "codeshare.shareCurrentFile",
+        "title": "Share Current File",
+        "category": "CodeShare",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "codeshare.shareClipboard",
+        "title": "Share Clipboard",
+        "category": "CodeShare"
+      },
+      {
+        "command": "codeshare.shareFromExplorer",
+        "title": "Share File(s) to Discord",
+        "category": "CodeShare"
+      },
+      {
+        "command": "codeshare.testConnection",
+        "title": "Test Connection",
+        "category": "CodeShare"
+      },
+      {
+        "command": "codeshare.showWelcome",
+        "title": "Open Welcome Wizard",
+        "category": "CodeShare"
+      },
+      {
+        "command": "codeshare.clearHistory",
+        "title": "Clear History",
+        "category": "CodeShare"
+      },
+      {
+        "command": "codeshare.openSettings",
+        "title": "Open Settings",
+        "category": "CodeShare"
+      },
+      {
+        "command": "codeshare.refreshAccount",
+        "title": "Refresh",
+        "category": "CodeShare",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "codeshare.refreshHistory",
+        "title": "Refresh History",
+        "category": "CodeShare",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "codeshare.refreshConnection",
+        "title": "Refresh Connection",
+        "category": "CodeShare",
+        "icon": "$(refresh)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codeshareSidebar",
+          "title": "CodeShare Discord",
+          "icon": "resources/sidebar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "codeshareSidebar": [
+        {
+          "id": "codeshareAccount",
+          "name": "Account"
+        },
+        {
+          "id": "codeshareQuickShare",
+          "name": "Quick Share"
+        },
+        {
+          "id": "codeshareConnection",
+          "name": "Connection Status"
+        },
+        {
+          "id": "codeshareHistory",
+          "name": "Recent Shares"
+        },
+        {
+          "id": "codeshareSettings",
+          "name": "Settings"
+        }
+      ]
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "codeshare.shareSelection",
+          "when": "editorTextFocus",
+          "group": "codeshare@1"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "codeshare.shareCurrentFile",
+          "when": "editorIsOpen",
+          "group": "navigation@9"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "codeshare.shareFromExplorer",
+          "group": "codeshare@1"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "codeshare.refreshAccount",
+          "when": "view == codeshareAccount",
+          "group": "navigation"
+        },
+        {
+          "command": "codeshare.refreshConnection",
+          "when": "view == codeshareConnection",
+          "group": "navigation"
+        },
+        {
+          "command": "codeshare.refreshHistory",
+          "when": "view == codeshareHistory",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "codeshare.refreshAccount",
+          "when": "false"
+        },
+        {
+          "command": "codeshare.refreshHistory",
+          "when": "false"
+        },
+        {
+          "command": "codeshare.refreshConnection",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "CodeShare Discord",
+      "properties": {
+        "codeshare.backendUrl": {
+          "type": "string",
+          "default": "http://localhost:8787",
+          "markdownDescription": "Base URL of the CodeShare Discord backend that handles Discord OAuth and webhook forwarding (e.g. `https://your-backend.example.com`)."
+        },
+        "codeshare.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show progress and result notifications when sharing."
+        },
+        "codeshare.autoCopyMessageLink": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically copy the Discord message link after a successful share."
+        },
+        "codeshare.historySize": {
+          "type": "number",
+          "default": 50,
+          "minimum": 1,
+          "maximum": 500,
+          "description": "How many recent shares to keep in local history."
+        },
+        "codeshare.uploadMode": {
+          "type": "string",
+          "enum": ["auto", "alwaysFile", "alwaysInline"],
+          "enumDescriptions": [
+            "Send inline when it fits, upload as a file when too large.",
+            "Always upload the code as a .txt attachment.",
+            "Always send as an inline code block."
+          ],
+          "default": "auto",
+          "description": "How code is delivered to Discord."
+        },
+        "codeshare.theme": {
+          "type": "string",
+          "enum": ["auto", "light", "dark"],
+          "default": "auto",
+          "description": "Theme used by the Welcome wizard."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -p ./ -w",
+    "lint": "eslint src --ext ts",
+    "pretest": "npm run compile && npm run lint",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "typescript": "^5.6.3"
+  }
+}
